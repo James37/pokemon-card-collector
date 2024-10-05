@@ -38,7 +38,7 @@ const App = () => {
   const getRandomCard = async (rarity) => {
     const response = await axios.get(`https://api.pokemontcg.io/v2/cards`, {
       params: {
-        q: `rarity:${rarity} set.id:base1`, // Filter for original 151 Pokémon
+        q: `supertype:Pokémon rarity:${rarity} nationalPokedexNumbers:[1 TO 151]`, // Fetch only original 151 Pokémon
       },
     });
     const cards = response.data.data;
