@@ -15,34 +15,89 @@ const App = () => {
     };
 
     let pulledCards = [];
-    for (let i = 0; i < 5; i++) {
-      const rarity = getRarity(pullRates);
-      const card = await getRandomCard(rarity);
-      pulledCards.push(card);
+
+    // Keep pulling cards until we have 5 that pass the pull rate check
+    while (pulledCards.length < 5) {
+      const randomNumbers = generateRandomNumbers(5, 1, 151); // Generate 5 random numbers between 1 and 151
+      const randomCards = await fetchRandomCards(randomNumbers); // Fetch 5 random cards based on these numbers
+
+      for (let card of randomCards) {
+        const rarity = getRarity(pullRates); // Get a rarity based on rates
+        if (mapRarity(card.rarity) === rarity) {
+          pulledCards.push(card); // Keep card if rarity matches
+          if (pulledCards.length === 5) break; // Stop once we have 5 cards
+        }
+      }
     }
 
     setCards((prevCards) => [...prevCards, ...pulledCards]);
   };
 
+  // Helper function to generate random numbers within a range
+  const generateRandomNumbers = (count, min, max) => {
+    const numbers = [];
+    while (numbers.length < count) {
+      const num = Math.floor(Math.random() * (max - min + 1)) + min;
+      if (!numbers.includes(num)) {
+        numbers.push(num);
+      }
+    }
+    return numbers;
+  };
+
   // Helper function to determine the rarity of each pull
   const getRarity = (rates) => {
     const rand = Math.random();
-    if (rand <= rates.ultraRare) return "Rare Holo";
+    if (rand <= rates.ultraRare) return "UltraRare";
     if (rand <= rates.rare + rates.ultraRare) return "Rare";
     if (rand <= rates.uncommon + rates.rare + rates.ultraRare)
       return "Uncommon";
     return "Common";
   };
 
-  // Fetch a random card from the API, filtered by rarity
-  const getRandomCard = async (rarity) => {
-    const response = await axios.get(`https://api.pokemontcg.io/v2/cards`, {
-      params: {
-        q: `supertype:Pokémon rarity:${rarity} nationalPokedexNumbers:[1 TO 151]`, // Fetch only original 151 Pokémon
-      },
+  // Map detailed rarities to broader categories for pull rates
+  const mapRarity = (rarity) => {
+    const rarityMap = {
+      "Amazing Rare": "UltraRare",
+      Common: "Common",
+      Uncommon: "Uncommon",
+      Rare: "Rare",
+      "Rare Holo": "Rare",
+      "Rare Holo EX": "UltraRare",
+      "Rare Holo GX": "UltraRare",
+      "Rare Holo LV.X": "UltraRare",
+      "Rare Holo Star": "UltraRare",
+      "Rare Holo V": "UltraRare",
+      "Rare Holo VMAX": "UltraRare",
+      "Rare Prime": "UltraRare",
+      "Rare Prism Star": "UltraRare",
+      "Rare Rainbow": "UltraRare",
+      "Rare Secret": "UltraRare",
+      "Rare Shining": "UltraRare",
+      "Rare Shiny": "UltraRare",
+      "Rare Shiny GX": "UltraRare",
+      "Rare Ultra": "UltraRare",
+      LEGEND: "UltraRare",
+      Promo: "Rare",
+      "Rare ACE": "UltraRare",
+      "Rare BREAK": "UltraRare",
+    };
+
+    return rarityMap[rarity] || "Common"; // Default to Common if not mapped
+  };
+
+  // Fetch Pokémon based on their national dex numbers
+  const fetchRandomCards = async (numbers) => {
+    const promises = numbers.map(async (num) => {
+      const response = await axios.get(`https://api.pokemontcg.io/v2/cards`, {
+        params: {
+          q: `supertype:Pokémon nationalPokedexNumbers:${num}`, // Fetch Pokémon with the given national dex number
+        },
+      });
+      return response.data.data[0]; // Assuming the first card returned is the one we need
     });
-    const cards = response.data.data;
-    return cards[Math.floor(Math.random() * cards.length)];
+
+    return Promise.all(promises); // Return all the fetched cards
   };
 
   return (
