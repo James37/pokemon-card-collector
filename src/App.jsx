@@ -1,118 +1,178 @@
 import { useState } from "react";
 import axios from "axios";
+import { Button, Container, Row, Col, Carousel } from "react-bootstrap";
 import "./App.css";
+import PokemonCard from "./PokemonCard";
 
 const App = () => {
   const [cards, setCards] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [allCards, setAllCards] = useState([]);
 
-  // Function to simulate pulling cards based on rarity
+  const pullRates = {
+    common: 0.74,
+    uncommon: 0.2,
+    rare: 0.05,
+    ultraRare: 0.01,
+  };
+
+  // Function to pull cards based on rarity distribution
   const pullCards = async () => {
-    const pullRates = {
-      common: 0.74,
-      uncommon: 0.2,
-      rare: 0.05,
-      ultraRare: 0.01,
-    };
-
+    // Fetch all relevant Gen 1 cards in one go
+    let allGen1Cards = allCards;
+    if (!allGen1Cards.length) {
+      allGen1Cards = await fetchAllGen1Cards();
+      alert(allGen1Cards);
+      setAllCards(allGen1Cards);
+    }
     let pulledCards = [];
 
-    // Keep pulling cards until we have 5 that pass the pull rate check
-    while (pulledCards.length < 5) {
-      const randomNumbers = generateRandomNumbers(5, 1, 151); // Generate 5 random numbers between 1 and 151
-      const randomCards = await fetchRandomCards(randomNumbers); // Fetch 5 random cards based on these numbers
+    // Determine how many of each rarity to pull
+    const rarityDistribution = getRarityDistribution(5, pullRates);
+    // Try to find the cards that match the rarity
+    for (let rarity in rarityDistribution) {
+      let rarityCount = rarityDistribution[rarity];
+      const matchingCards = allGen1Cards.filter(
+        (card) => mapRarity(card.rarity) === rarity
+      );
 
-      for (let card of randomCards) {
-        const rarity = getRarity(pullRates); // Get a rarity based on rates
-        if (mapRarity(card.rarity) === rarity) {
-          pulledCards.push(card); // Keep card if rarity matches
-          if (pulledCards.length === 5) break; // Stop once we have 5 cards
-        }
+      // If not enough cards for that rarity, fallback to another rarity
+      while (rarityCount > 0 && matchingCards.length > 0) {
+        const randomIndex = Math.floor(Math.random() * matchingCards.length);
+        pulledCards.push(matchingCards.splice(randomIndex, 1)[0]);
+        rarityCount--;
       }
     }
+    alert(pulledCards);
 
-    setCards((prevCards) => [...prevCards, ...pulledCards]);
-  };
-
-  // Helper function to generate random numbers within a range
-  const generateRandomNumbers = (count, min, max) => {
-    const numbers = [];
-    while (numbers.length < count) {
-      const num = Math.floor(Math.random() * (max - min + 1)) + min;
-      if (!numbers.includes(num)) {
-        numbers.push(num);
-      }
+    // If we have less than 5 cards, refetch or handle fallback
+    if (pulledCards.length < 5) {
+      // Handle fallback logic here (e.g., refetch or fill with lower rarity cards)
     }
-    return numbers;
+
+    setCards(pulledCards);
+    setCurrentIndex(0);
   };
 
-  // Helper function to determine the rarity of each pull
+  // Get rarity based on pull rates
   const getRarity = (rates) => {
     const rand = Math.random();
-    if (rand <= rates.ultraRare) return "UltraRare";
-    if (rand <= rates.rare + rates.ultraRare) return "Rare";
+    if (rand <= rates.ultraRare) return "ultraRare";
+    if (rand <= rates.rare + rates.ultraRare) return "rare";
     if (rand <= rates.uncommon + rates.rare + rates.ultraRare)
-      return "Uncommon";
-    return "Common";
+      return "uncommon";
+    return "common";
   };
 
-  // Map detailed rarities to broader categories for pull rates
+  // Map API rarities to the internal rarity categories
   const mapRarity = (rarity) => {
     const rarityMap = {
-      "Amazing Rare": "UltraRare",
-      Common: "Common",
-      Uncommon: "Uncommon",
-      Rare: "Rare",
-      "Rare Holo": "Rare",
-      "Rare Holo EX": "UltraRare",
-      "Rare Holo GX": "UltraRare",
-      "Rare Holo LV.X": "UltraRare",
-      "Rare Holo Star": "UltraRare",
-      "Rare Holo V": "UltraRare",
-      "Rare Holo VMAX": "UltraRare",
-      "Rare Prime": "UltraRare",
-      "Rare Prism Star": "UltraRare",
-      "Rare Rainbow": "UltraRare",
-      "Rare Secret": "UltraRare",
-      "Rare Shining": "UltraRare",
-      "Rare Shiny": "UltraRare",
-      "Rare Shiny GX": "UltraRare",
-      "Rare Ultra": "UltraRare",
-      LEGEND: "UltraRare",
-      Promo: "Rare",
-      "Rare ACE": "UltraRare",
-      "Rare BREAK": "UltraRare",
+      "Amazing Rare": "ultraRare",
+      Common: "common",
+      Uncommon: "uncommon",
+      Rare: "rare",
+      "Rare Holo": "rare",
+      "Rare Holo EX": "ultraRare",
+      "Rare Holo GX": "ultraRare",
+      "Rare Holo LV.X": "ultraRare",
+      "Rare Holo Star": "ultraRare",
+      "Rare Holo V": "ultraRare",
+      "Rare Holo VMAX": "ultraRare",
+      "Rare Prime": "ultraRare",
+      "Rare Prism Star": "ultraRare",
+      "Rare Rainbow": "ultraRare",
+      "Rare Secret": "ultraRare",
+      "Rare Shining": "ultraRare",
+      "Rare Shiny": "ultraRare",
+      "Rare Shiny GX": "ultraRare",
+      "Rare Ultra": "ultraRare",
+      LEGEND: "ultraRare",
+      Promo: "rare",
+      "Rare ACE": "ultraRare",
+      "Rare BREAK": "ultraRare",
     };
 
-    return rarityMap[rarity] || "Common"; // Default to Common if not mapped
+    return rarityMap[rarity] || "common";
   };
 
-  // Fetch Pokémon based on their national dex numbers
-  const fetchRandomCards = async (numbers) => {
-    const promises = numbers.map(async (num) => {
-      const response = await axios.get(`https://api.pokemontcg.io/v2/cards`, {
-        params: {
-          q: `supertype:Pokémon nationalPokedexNumbers:${num}`, // Fetch Pokémon with the given national dex number
-        },
-      });
-      return response.data.data[0]; // Assuming the first card returned is the one we need
+  // Fetch all Pokémon cards for Gen 1 and filter duplicates
+  const fetchAllGen1Cards = async () => {
+    const response = await axios.get(`https://api.pokemontcg.io/v2/cards`, {
+      headers: {
+        "X-Api-Key": "d565b5ad-e036-49a1-a815-bc143e29dcd5",
+      },
+      params: {
+        q: "nationalPokedexNumbers:[1 TO 151]",
+      },
     });
 
-    return Promise.all(promises); // Return all the fetched cards
+    // List of Gen 1 set IDs
+    const gen1SetIds = [
+      "base1", // Base Set
+      "base2", // Jungle
+      "base3", // Fossil
+      "base5", // Team Rocket
+      "base4", // Base Set 2
+      "gym1", // Gym Heroes
+      "gym2", // Gym Challenge
+    ];
+
+    // Filter cards from Gen 1 sets
+    const filteredCards = response.data.data.filter(
+      (card) => card.set && gen1SetIds.includes(card.set.id)
+    );
+
+    // Remove duplicate cards based on nationalPokedexNumbers
+    const uniqueCards = [];
+    const seen = new Set();
+    for (const card of filteredCards) {
+      const dexNumber = card.nationalPokedexNumbers?.[0];
+      if (!seen.has(dexNumber)) {
+        uniqueCards.push(card);
+        seen.add(dexNumber);
+      }
+    }
+
+    return uniqueCards;
+  };
+
+  // Get rarity distribution based on pull rates
+  const getRarityDistribution = (totalCards, pullRates) => {
+    const distribution = { common: 0, uncommon: 0, rare: 0, ultraRare: 0 };
+    for (let i = 0; i < totalCards; i++) {
+      const rarity = getRarity(pullRates);
+      distribution[rarity]++;
+    }
+    return distribution;
   };
 
   return (
-    <div className="app-container">
-      <h1>Pokémon Card Puller</h1>
-      <button onClick={pullCards}>Pull 5 Cards</button>
-      <div className="scroll-container">
-        {cards.map((card) => (
-          <div key={card.id} className="card">
-            <img src={card.images.small} alt={card.name} />
-            <p>{card.name}</p>
-          </div>
-        ))}
-      </div>
-    </div>
+    <Container fluid className="d-flex flex-column wrapper">
+      <Row className="justify-content-center">
+        <Col xs="auto">
+          <Button size="sm" variant="primary" onClick={pullCards}>
+            Pull 5 Cards
+          </Button>
+        </Col>
+      </Row>
+      <Row className="flex-grow-1 text-center overflow-hidden mw-100v">
+        <Col className="h-100 py-2">
+          {cards.length > 0 && (
+            <Carousel
+              activeIndex={currentIndex}
+              onSelect={setCurrentIndex}
+              className="h-100"
+            >
+              {cards.map((card) => (
+                <Carousel.Item key={card.id}>
+                  {card && <PokemonCard src={card?.images?.large} />}
+                </Carousel.Item>
+              ))}
+            </Carousel>
+          )}
+        </Col>
+      </Row>
+    </Container>
   );
 };
 
