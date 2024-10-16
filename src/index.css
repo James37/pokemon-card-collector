@@ -12,4 +12,5 @@
 
 .background {
   background-image: url("./assets/split-background.webp");
+  background-size: 100% 100%;
 }
