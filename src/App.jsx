@@ -22,8 +22,6 @@ const App = () => {
     let allGen1Cards = allCards;
     if (!allGen1Cards.length) {
       allGen1Cards = await fetchAllGen1Cards();
-      alert(allGen1Cards);
-      setAllCards(allGen1Cards);
     }
     let pulledCards = [];
 
@@ -43,7 +41,6 @@ const App = () => {
         rarityCount--;
       }
     }
-    alert(pulledCards);
 
     // If we have less than 5 cards, refetch or handle fallback
     if (pulledCards.length < 5) {
@@ -102,38 +99,41 @@ const App = () => {
         "X-Api-Key": "d565b5ad-e036-49a1-a815-bc143e29dcd5",
       },
       params: {
-        q: "nationalPokedexNumbers:[1 TO 151]",
+        q: "nationalPokedexNumbers:[1 TO 151] (set.id:base1 OR set.id:base2 OR set.id:base3 OR set.id:base4)",
       },
     });
 
+    setAllCards(response.data.data);
+    return response.data.data;
+
     // List of Gen 1 set IDs
-    const gen1SetIds = [
-      "base1", // Base Set
-      "base2", // Jungle
-      "base3", // Fossil
-      "base5", // Team Rocket
-      "base4", // Base Set 2
-      "gym1", // Gym Heroes
-      "gym2", // Gym Challenge
-    ];
+    // const gen1SetIds = [
+    //   "base1", // Base Set
+    //   "base2", // Jungle
+    //   "base3", // Fossil
+    //   "base5", // Team Rocket
+    //   "base4", // Base Set 2
+    //   "gym1", // Gym Heroes
+    //   "gym2", // Gym Challenge
+    // ];
 
     // Filter cards from Gen 1 sets
-    const filteredCards = response.data.data.filter(
-      (card) => card.set && gen1SetIds.includes(card.set.id)
-    );
+    // const filteredCards = response.data.data.filter(
+    //   (card) => card.set && gen1SetIds.includes(card.set.id)
+    // );
 
-    // Remove duplicate cards based on nationalPokedexNumbers
-    const uniqueCards = [];
-    const seen = new Set();
-    for (const card of filteredCards) {
-      const dexNumber = card.nationalPokedexNumbers?.[0];
-      if (!seen.has(dexNumber)) {
-        uniqueCards.push(card);
-        seen.add(dexNumber);
-      }
-    }
+    // // Remove duplicate cards based on nationalPokedexNumbers
+    // const uniqueCards = [];
+    // const seen = new Set();
+    // for (const card of filteredCards) {
+    //   const dexNumber = card.nationalPokedexNumbers?.[0];
+    //   if (!seen.has(dexNumber)) {
+    //     uniqueCards.push(card);
+    //     seen.add(dexNumber);
+    //   }
+    // }
 
-    return uniqueCards;
+    // return uniqueCards;
   };
 
   // Get rarity distribution based on pull rates
