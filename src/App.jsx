@@ -1,8 +1,9 @@
 import { useState } from "react";
-import axios from "axios";
+// import axios from "axios";
 import { Button, Container, Row, Col, Carousel } from "react-bootstrap";
 import "./App.css";
 import PokemonCard from "./PokemonCard";
+import pokemonList from "./pokemon.json"
 
 const App = () => {
   const [cards, setCards] = useState([]);
@@ -21,7 +22,10 @@ const App = () => {
     // Fetch all relevant Gen 1 cards in one go
     let allGen1Cards = allCards;
     if (!allGen1Cards.length) {
-      allGen1Cards = await fetchAllGen1Cards();
+      // allGen1Cards = await fetchAllGen1Cards();
+      allGen1Cards = pokemonList;
+      setAllCards(allGen1Cards)
+      console.log(allGen1Cards)
     }
     let pulledCards = [];
 
@@ -93,48 +97,48 @@ const App = () => {
   };
 
   // Fetch all Pokémon cards for Gen 1 and filter duplicates
-  const fetchAllGen1Cards = async () => {
-    const response = await axios.get(`https://api.pokemontcg.io/v2/cards`, {
-      headers: {
-        "X-Api-Key": "d565b5ad-e036-49a1-a815-bc143e29dcd5",
-      },
-      params: {
-        q: "nationalPokedexNumbers:[1 TO 151] (set.id:base1 OR set.id:base2 OR set.id:base3 OR set.id:base4)",
-      },
-    });
+  // const fetchAllGen1Cards = async () => {
+  //   const response = await axios.get(`https://api.pokemontcg.io/v2/cards`, {
+  //     headers: {
+  //       "X-Api-Key": "d565b5ad-e036-49a1-a815-bc143e29dcd5",
+  //     },
+  //     params: {
+  //       q: "nationalPokedexNumbers:[1 TO 151] (set.id:base1 OR set.id:base2 OR set.id:base3 OR set.id:base4)",
+  //     },
+  //   });
 
-    setAllCards(response.data.data);
-    return response.data.data;
+  //   setAllCards(response.data.data);
+  //   return response.data.data;
 
-    // List of Gen 1 set IDs
-    // const gen1SetIds = [
-    //   "base1", // Base Set
-    //   "base2", // Jungle
-    //   "base3", // Fossil
-    //   "base5", // Team Rocket
-    //   "base4", // Base Set 2
-    //   "gym1", // Gym Heroes
-    //   "gym2", // Gym Challenge
-    // ];
+  //   // List of Gen 1 set IDs
+  //   // const gen1SetIds = [
+  //   //   "base1", // Base Set
+  //   //   "base2", // Jungle
+  //   //   "base3", // Fossil
+  //   //   "base5", // Team Rocket
+  //   //   "base4", // Base Set 2
+  //   //   "gym1", // Gym Heroes
+  //   //   "gym2", // Gym Challenge
+  //   // ];
 
-    // Filter cards from Gen 1 sets
-    // const filteredCards = response.data.data.filter(
-    //   (card) => card.set && gen1SetIds.includes(card.set.id)
-    // );
+  //   // Filter cards from Gen 1 sets
+  //   // const filteredCards = response.data.data.filter(
+  //   //   (card) => card.set && gen1SetIds.includes(card.set.id)
+  //   // );
 
-    // // Remove duplicate cards based on nationalPokedexNumbers
-    // const uniqueCards = [];
-    // const seen = new Set();
-    // for (const card of filteredCards) {
-    //   const dexNumber = card.nationalPokedexNumbers?.[0];
-    //   if (!seen.has(dexNumber)) {
-    //     uniqueCards.push(card);
-    //     seen.add(dexNumber);
-    //   }
-    // }
+  //   // // Remove duplicate cards based on nationalPokedexNumbers
+  //   // const uniqueCards = [];
+  //   // const seen = new Set();
+  //   // for (const card of filteredCards) {
+  //   //   const dexNumber = card.nationalPokedexNumbers?.[0];
+  //   //   if (!seen.has(dexNumber)) {
+  //   //     uniqueCards.push(card);
+  //   //     seen.add(dexNumber);
+  //   //   }
+  //   // }
 
-    // return uniqueCards;
-  };
+  //   // return uniqueCards;
+  // };
 
   // Get rarity distribution based on pull rates
   const getRarityDistribution = (totalCards, pullRates) => {
@@ -156,7 +160,7 @@ const App = () => {
         </Col>
       </Row>
       <Row className="flex-grow-1 text-center overflow-hidden mw-100v">
-        <Col className="h-100 py-2">
+        <Col className="background h-100 py-2">
           {cards.length > 0 && (
             <Carousel
               activeIndex={currentIndex}
